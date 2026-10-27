@@ -1,0 +1,11 @@
+<nav class="site-nav" aria-label="Menú principal">
+    <a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %}>
+        Inicio
+    </a>
+    <a href="{% url 'hola' %}"{% if request.resolver_match.url_name == 'hola' %} aria-current="page"{% endif %}>
+        Hola
+    </a>
+    <a href="{% url 'saludo' %}"{% if request.resolver_match.url_name == 'saludo' %} aria-current="page"{% endif %}>
+        Saludo
+    </a>
+</nav>

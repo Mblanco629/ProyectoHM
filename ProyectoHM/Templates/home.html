@@ -1,0 +1,67 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Cinco noticias recientes de Expansión y Cinco Días.">
+    <title>Trading Django</title>
+    <link rel="stylesheet" href="{% static 'styles_ilai.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-logo" href="{% url 'home' %}">Trading Django</a>
+            {% include "menu.html" %}
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section aria-labelledby="page-title">
+            <p class="eyebrow">MERCADOS · ACTUALIDAD</p>
+            <h1 id="page-title">Trading Django</h1>
+            <p class="landing-description">
+                Las últimas noticias financieras, reunidas en un solo lugar.
+            </p>
+
+            <div class="news-grid">
+                {% for feed in feeds %}
+                    <section class="card news-panel" aria-labelledby="feed-{{ forloop.counter }}">
+                        <div class="panel-heading">
+                            <p class="eyebrow">RSS · {{ feed.name }}</p>
+                            <h2 id="feed-{{ forloop.counter }}">{{ feed.name }}</h2>
+                        </div>
+
+                        {% if feed.error %}
+                            <p class="site-flash error" role="status">
+                                No se pudieron cargar las noticias: {{ feed.error }}
+                            </p>
+                        {% elif feed.items %}
+                            <ol class="news-list">
+                                {% for item in feed.items %}
+                                    <li class="news-item">
+                                        <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">
+                                            {{ item.title }}
+                                        </a>
+                                        {% if item.published %}
+                                            <time>{{ item.published }}</time>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ol>
+                        {% else %}
+                            <p class="site-flash" role="status">
+                                El RSS no contiene noticias disponibles.
+                            </p>
+                        {% endif %}
+
+                        <a class="news-source" href="{{ feed.url }}" target="_blank" rel="noopener noreferrer">
+                            Abrir RSS
+                        </a>
+                    </section>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>
