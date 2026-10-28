@@ -1,0 +1,45 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Resultados del análisis de la Estrategia V2.">
+    <title>Resultados V2 · Trading Django</title>
+    <link rel="stylesheet" href="{% static 'styles_ilai.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-logo" href="{% url 'home' %}">Trading Django</a>
+            {% include "menu.html" %}
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section class="card" aria-labelledby="page-title">
+            <p class="eyebrow">ANÁLISIS · {{ ticker }}</p>
+            <h1 id="page-title">Resultados de Estrategia V2</h1>
+            <p>
+                Período: {{ valores.fecha_inicio }} — {{ valores.fecha_fin }}.
+                Medias móviles: {{ valores.periodo_media_corta }} / {{ valores.periodo_media_larga }} sesiones.
+            </p>
+
+            <div class="metrics">
+                <p>Rentabilidad del mercado<strong>{{ rentabilidad_mercado|floatformat:2 }}%</strong></p>
+                <p>Rentabilidad de la estrategia<strong>{{ rentabilidad_estrategia|floatformat:2 }}%</strong></p>
+                <p>Probabilidad estimada de subida<strong>{{ probabilidad_subida_pct|floatformat:2 }}%</strong></p>
+                <p>Última señal de trading<strong>{{ ultima_senal_trading }}</strong></p>
+            </div>
+
+            <p class="chart-help">
+                Pasa el cursor sobre el gráfico para consultar los valores. Puedes
+                ampliar una zona arrastrando sobre ella y restablecer la vista con
+                un doble clic.
+            </p>
+            <div class="chart-container">{{ grafico|safe }}</div>
+            <p><a href="{% url 'estrategia_v2' %}">Volver a configurar el análisis</a></p>
+        </section>
+    </main>
+</body>
+</html>

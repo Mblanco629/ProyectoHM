@@ -1,0 +1,65 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Configura y ejecuta el análisis de la Estrategia V2.">
+    <title>Estrategia V2 · Trading Django</title>
+    <link rel="stylesheet" href="{% static 'styles_ilai.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-logo" href="{% url 'home' %}">Trading Django</a>
+            {% include "menu.html" %}
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section class="card" aria-labelledby="page-title">
+            <p class="eyebrow">ANÁLISIS · ESTRATEGIA V2</p>
+            <h1 id="page-title">Configurar backtesting</h1>
+            <p>Indica el ticker, el rango histórico y los períodos de las medias móviles.</p>
+
+            {% if error %}
+                <p class="site-flash error" role="alert">{{ error }}</p>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <label for="ticker">
+                    Ticker de la acción
+                    <input id="ticker" name="ticker" type="text"
+                           value="{{ valores.ticker }}" placeholder="Por ejemplo, SAN.MC"
+                           maxlength="15" pattern="[A-Za-z0-9.^=-]{1,15}"
+                           autocomplete="off" required>
+                </label>
+                <label for="fecha_inicio">
+                    Fecha de inicio
+                    <input id="fecha_inicio" name="fecha_inicio" type="date"
+                           value="{{ valores.fecha_inicio }}" max="{{ hoy }}" required>
+                </label>
+                <label for="fecha_fin">
+                    Fecha de fin
+                    <input id="fecha_fin" name="fecha_fin" type="date"
+                           value="{{ valores.fecha_fin }}" max="{{ hoy }}" required>
+                </label>
+                <label for="periodo_media_corta">
+                    Período de la media móvil corta (sesiones)
+                    <input id="periodo_media_corta" name="periodo_media_corta"
+                           type="number" min="1" step="1"
+                           value="{{ valores.periodo_media_corta }}" required>
+                </label>
+                <label for="periodo_media_larga">
+                    Período de la media móvil larga (sesiones)
+                    <input id="periodo_media_larga" name="periodo_media_larga"
+                           type="number" min="2" step="1"
+                           value="{{ valores.periodo_media_larga }}" required>
+                </label>
+                <button type="submit">Ejecutar Estrategia V2</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

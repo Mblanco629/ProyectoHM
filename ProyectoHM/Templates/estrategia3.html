@@ -1,0 +1,108 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Calcula métricas de trading para una acción.">
+    <title>Estrategia 3 · Trading Django</title>
+    <link rel="stylesheet" href="{% static 'styles_ilai.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-logo" href="{% url 'home' %}">Trading Django</a>
+            {% include "menu.html" %}
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section class="card" aria-labelledby="page-title">
+            <p class="eyebrow">ANÁLISIS · ESTRATEGIA 3</p>
+            <h1 id="page-title">Métricas de trading</h1>
+            <p>
+                Introduce el ticker de una acción y la fecha de análisis.
+                Se utilizarán los cinco años anteriores de datos históricos.
+            </p>
+
+            {% if error %}
+                <p class="site-flash error" role="alert">{{ error }}</p>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <label for="ticker">
+                    Ticker de la acción
+                    <input
+                        id="ticker"
+                        name="ticker"
+                        type="text"
+                        value="{{ ticker }}"
+                        placeholder="Por ejemplo, AAPL"
+                        maxlength="15"
+                        pattern="[A-Za-z0-9.^=-]{1,15}"
+                        autocomplete="off"
+                        required
+                    >
+                </label>
+                <label for="fecha">
+                    Fecha de análisis
+                    <input id="fecha" name="fecha" type="date" value="{{ fecha }}" required>
+                </label>
+                <button type="submit">Calcular métricas</button>
+            </form>
+
+            {% if metricas %}
+                <section class="results" aria-labelledby="results-title">
+                    <p class="eyebrow">{{ ticker }} · {{ fecha }}</p>
+                    <h2 id="results-title">Resultados del análisis</h2>
+                    <div class="metrics">
+                        <p>
+                            Media móvil rápida / lenta
+                            <strong>{{ metricas.periodo_rapido }} / {{ metricas.periodo_lento }} sesiones</strong>
+                        </p>
+                        <p>
+                            Sharpe en entrenamiento
+                            <strong>{{ metricas.sharpe_entrenamiento|floatformat:2 }}</strong>
+                        </p>
+                        <p>
+                            Rentabilidad en entrenamiento
+                            <strong>{{ metricas.rentabilidad_entrenamiento_pct|floatformat:2 }}%</strong>
+                        </p>
+                        <p>
+                            Sharpe en prueba
+                            <strong>
+                                {% if metricas.sharpe_prueba is not None %}
+                                    {{ metricas.sharpe_prueba|floatformat:2 }}
+                                {% else %}
+                                    No disponible
+                                {% endif %}
+                            </strong>
+                        </p>
+                        <p>
+                            Rentabilidad en prueba
+                            <strong>{{ metricas.rentabilidad_prueba_pct|floatformat:2 }}%</strong>
+                        </p>
+                        <p>
+                            Recomendación de la estrategia
+                            <strong>{{ metricas.recomendacion_backtest }}</strong>
+                        </p>
+                        <p>
+                            Señal del modelo IA
+                            <strong>{{ metricas.modelo_ia.senal_actual }}</strong>
+                        </p>
+                        <p>
+                            Probabilidad de alza del modelo IA
+                            <strong>{{ metricas.probabilidad_alza_actual_pct|floatformat:2 }}%</strong>
+                        </p>
+                        <p>
+                            Exactitud del modelo IA en validación
+                            <strong>{{ metricas.accuracy_validacion_pct|floatformat:2 }}%</strong>
+                        </p>
+                    </div>
+                </section>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

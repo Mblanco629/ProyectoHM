@@ -1,0 +1,63 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Chatbot de Trading Django.">
+    <title>Chatbot · Trading Django</title>
+    <link rel="stylesheet" href="{% static 'styles_ilai.css' %}">
+    <style>
+        .chat-frame {
+            display: block;
+            width: 100%;
+            height: min(75vh, 760px);
+            min-height: 480px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+        }
+
+        @media (max-width: 600px) {
+            .chat-frame {
+                height: 70vh;
+                min-height: 420px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-logo" href="{% url 'home' %}">Trading Django</a>
+            {% include "menu.html" %}
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section class="card">
+            <h1>Chatbot Trading Django</h1>
+            <p>
+                Utiliza el chat integrado. Si no se muestra correctamente,
+                puedes abrirlo directamente en n8n.
+            </p>
+            <iframe
+                class="chat-frame"
+                src="https://interlinkedai-n8n.ttdo8n.easypanel.host/webhook/fdf3f6c0-bfcd-4892-848e-5266dc8d40be/chat"
+                title="Chat de Trading Django en n8n"
+                loading="lazy"
+                referrerpolicy="no-referrer">
+            </iframe>
+            <p>
+                <a
+                    href="https://interlinkedai-n8n.ttdo8n.easypanel.host/webhook/fdf3f6c0-bfcd-4892-848e-5266dc8d40be/chat"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    Abrir el chat directamente en n8n
+                </a>
+            </p>
+        </section>
+    </main>
+</body>
+</html>

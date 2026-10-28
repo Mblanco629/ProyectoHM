@@ -2,10 +2,16 @@
     <a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %}>
         Inicio
     </a>
-    <a href="{% url 'hola' %}"{% if request.resolver_match.url_name == 'hola' %} aria-current="page"{% endif %}>
-        Hola
+    <a href="{% url 'chatbot' %}"{% if request.resolver_match.url_name == 'chatbot' %} aria-current="page"{% endif %}>
+        Chatbot
     </a>
-    <a href="{% url 'saludo' %}"{% if request.resolver_match.url_name == 'saludo' %} aria-current="page"{% endif %}>
-        Saludo
+    <a href="{% url 'estrategia3' %}"{% if request.resolver_match.url_name == 'estrategia3' %} aria-current="page"{% endif %}>
+        Estrategia 3
+    </a>
+    <a href="{% url 'estrategia_v1' %}"{% if request.resolver_match.url_name == 'estrategia_v1' %} aria-current="page"{% endif %}>
+        Estrategia V1
+    </a>
+    <a href="{% url 'estrategia_v2' %}"{% if request.resolver_match.url_name == 'estrategia_v2' %} aria-current="page"{% endif %}>
+        Estrategia V2
     </a>
 </nav>

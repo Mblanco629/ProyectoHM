@@ -1,0 +1,100 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if nombre_estrategia %}{{ nombre_estrategia }}{% else %}Estrategias{% endif %} · Trading Django</title>
+    <link rel="stylesheet" href="{% static 'styles_ilai.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-logo" href="{% url 'home' %}">Trading Django</a>
+            {% include "menu.html" %}
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section class="card">
+            <h1>Backtesting {{ nombre_estrategia }}</h1>
+            <p>Elige el activo y el período para ejecutar el análisis.</p>
+            <form method="post">
+                {% csrf_token %}
+                <label for="ticker">
+                    Ticker
+                    <input id="ticker" name="ticker" value="{{ valores.ticker }}"
+                           placeholder="SAN.MC" required>
+                </label>
+                <label for="fecha_inicio">
+                    Fecha de inicio
+                    <input id="fecha_inicio" name="fecha_inicio" type="date"
+                           value="{{ valores.fecha_inicio }}" max="{{ hoy }}" required>
+                </label>
+                <label for="fecha_fin">
+                    Fecha de fin
+                    <input id="fecha_fin" name="fecha_fin" type="date"
+                           value="{{ valores.fecha_fin }}" max="{{ hoy }}" required>
+                </label>
+                <label for="rsi_entrada">
+                    RSI de entrada (compra)
+                    <input id="rsi_entrada" name="rsi_entrada" type="number"
+                           min="0" max="100" step="any"
+                           value="{{ valores.rsi_entrada }}" required>
+                </label>
+                <label for="rsi_salida">
+                    RSI de salida (venta)
+                    <input id="rsi_salida" name="rsi_salida" type="number"
+                           min="0" max="100" step="any"
+                           value="{{ valores.rsi_salida }}" required>
+                </label>
+                <label for="probabilidad_minima">
+                    Umbral de probabilidad de subida para comprar (%)
+                    <input id="probabilidad_minima" name="probabilidad_minima"
+                           type="number" min="0" max="100" step="any"
+                           value="{{ valores.probabilidad_minima }}" required>
+                </label>
+                <label for="probabilidad_maxima_venta">
+                    Umbral máximo de probabilidad de subida para vender (%)
+                    <input id="probabilidad_maxima_venta"
+                           name="probabilidad_maxima_venta" type="number"
+                           min="0" max="100" step="any"
+                           value="{{ valores.probabilidad_maxima_venta }}" required>
+                </label>
+                <label for="periodo_media_corta">
+                    Período de la media móvil corta (días)
+                    <input id="periodo_media_corta" name="periodo_media_corta"
+                           type="number" min="1" step="1"
+                           value="{{ valores.periodo_media_corta }}" required>
+                </label>
+                <label for="periodo_media_larga">
+                    Período de la media móvil larga (días)
+                    <input id="periodo_media_larga" name="periodo_media_larga"
+                           type="number" min="2" step="1"
+                           value="{{ valores.periodo_media_larga }}" required>
+                </label>
+                <button type="submit">Ejecutar análisis</button>
+            </form>
+
+            {% if error %}
+                <p class="site-flash error" role="alert">{{ error }}</p>
+            {% endif %}
+
+            {% if resultado %}
+                <section class="results" aria-labelledby="resultado-titulo">
+                    <h2 id="resultado-titulo">Resultados para {{ valores.ticker }}</h2>
+                    <div class="metrics">
+                        <p>Mercado: <strong>{{ resultado.rentabilidad_mercado|floatformat:2 }}%</strong></p>
+                        <p>Estrategia: <strong>{{ resultado.rentabilidad_estrategia|floatformat:2 }}%</strong></p>
+                        <p>Probabilidad estimada de subida: <strong>{{ resultado.probabilidad_subida|floatformat:2 }}%</strong></p>
+                        <p>Último valor de Senal_Trading: <strong>{{ resultado.ultima_senal_trading }}</strong></p>
+                    </div>
+                    {% if resultado.grafico %}
+                        <div class="chart-container">{{ resultado.grafico|safe }}</div>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>
