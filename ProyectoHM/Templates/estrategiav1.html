@@ -33,12 +33,76 @@
                 <p>Última señal de trading<strong>{{ ultima_senal_trading }}</strong></p>
             </div>
 
+            <h2>Backtest con modelo IA</h2>
+            <div class="chart-help">
+                <h3>Cómo se calcula</h3>
+                <ol>
+                    <li>
+                        Se calculan la media móvil simple corta y larga, el RSI
+                        (14 sesiones) y la volatilidad del precio.
+                    </li>
+                    <li>
+                        Un clasificador Random Forest aprende, con el 80 % inicial
+                        del histórico, si el cierre de la siguiente sesión subió
+                        o bajó. Se evalúa cronológicamente en el 20 % final; ese
+                        tramo es también el período que se compara en el backtest.
+                    </li>
+                    <li>
+                        Genera COMPRA cuando el RSI cae por debajo de
+                        {{ valores.rsi_entrada }}, la media corta supera a la
+                        larga y la probabilidad de subida supera
+                        {{ valores.probabilidad_minima }} %. Genera VENTA cuando
+                        el RSI supera {{ valores.rsi_salida }}, la media corta
+                        queda por debajo de la larga y la probabilidad de subida
+                        es inferior a {{ valores.probabilidad_maxima_venta }} %.
+                        Si no se cumplen todas las condiciones, mantiene la
+                        posición sin exposición.
+                    </li>
+                </ol>
+            </div>
+            <p>
+                La probabilidad mostrada corresponde a la subida estimada por
+                el modelo en la última sesión del período de prueba; no garantiza
+                resultados futuros.
+            </p>
             <p class="chart-help">
                 Pasa el cursor sobre el gráfico para consultar los valores. Puedes
                 ampliar una zona arrastrando sobre ella y restablecer la vista con
                 un doble clic.
             </p>
             <div class="chart-container">{{ grafico|safe }}</div>
+
+            <section aria-labelledby="resultado-tecnico-title">
+                <h2 id="resultado-tecnico-title">Backtest solo con indicadores técnicos</h2>
+                <p>
+                    Este cálculo no usa el modelo de IA ni su recomendación. En
+                    el mismo tramo final del histórico, genera COMPRA cuando el
+                    RSI está por debajo de {{ valores.rsi_entrada }} y la media
+                    corta es mayor que la larga; genera VENTA cuando el RSI
+                    supera {{ valores.rsi_salida }} y la media corta es menor
+                    que la larga. En los demás casos permanece fuera del
+                    mercado.
+                </p>
+                <p>
+                    En ambos backtests, COMPRA equivale a una posición larga
+                    (señal +1), VENTA a una posición corta (señal −1) y MANTENER
+                    a no tener exposición (señal 0). La señal calculada al cierre
+                    de una sesión se aplica a partir de la siguiente, para no
+                    usar información futura.
+                </p>
+                <div class="metrics">
+                    <p>Rentabilidad del mercado<strong>{{ rentabilidad_mercado_tecnica|floatformat:2 }}%</strong></p>
+                    <p>Rentabilidad de la estrategia técnica<strong>{{ rentabilidad_tecnica|floatformat:2 }}%</strong></p>
+                    <p>Última señal técnica<strong>{{ ultima_senal_tecnica }}</strong></p>
+                </div>
+                <div class="chart-container">{{ grafico_tecnico|safe }}</div>
+            </section>
+            <p class="chart-help">
+                La rentabilidad compara el capital acumulado de cada estrategia
+                con el rendimiento de comprar y mantener el activo durante el
+                período de prueba. El cálculo no incluye comisiones, impuestos
+                ni deslizamiento.
+            </p>
             <p><a href="{% url 'estrategia_v1' %}">Volver a configurar el análisis</a></p>
         </section>
     </main>

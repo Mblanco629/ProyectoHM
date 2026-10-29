@@ -57,6 +57,21 @@ def generar_senal(
         return "VENTA (SELL)"
     return "MANTENER (HOLD)"
 
+
+def generar_senal_tecnica(
+    sma_50, sma_200, rsi,
+    rsi_entrada: float = 30.0, rsi_salida: float = 70.0,
+):
+    """Genera señales usando únicamente medias móviles y RSI."""
+    if pd.isna(sma_50) or pd.isna(sma_200) or pd.isna(rsi):
+        return "MANTENER (HOLD)"
+    if rsi < rsi_entrada and sma_50 > sma_200:
+        return "COMPRA (BUY)"
+    if rsi > rsi_salida and sma_50 < sma_200:
+        return "VENTA (SELL)"
+    return "MANTENER (HOLD)"
+
+
 # =========================================================
 # BACKTESTING (Simulación de Rentabilidad)
 # =========================================================
@@ -85,14 +100,14 @@ def ejecutar_backtest(df):
 # EJECUTAR ESTRATEGIA IA (Función principal)
 # =========================================================
 
-def ejecutar_estrategia(
+def ejecutar_estrategia_completa(
     ticker, fecha_inicio, fecha_fin,
     rsi_entrada: float = 30.0, rsi_salida: float = 70.0,
     probabilidad_minima: float = 0.50,
     probabilidad_maxima_venta: float = 0.30,
     periodo_media_corta: int = 50, periodo_media_larga: int = 200,
 ):
-    """Entrena y evalúa el backtest de la estrategia para un activo.
+    """Evalúa los backtests con IA y con indicadores técnicos para un activo.
 
     Descarga los datos OHLCV del ticker, calcula los indicadores técnicos y
     prepara como objetivo si el cierre de la siguiente sesión será superior al
@@ -101,12 +116,10 @@ def ejecutar_estrategia(
     generar probabilidades, recomendaciones y resultados del backtest. No se
     mezclan aleatoriamente las observaciones.
 
-    Las señales se basan en las medias móviles, el RSI y la probabilidad
-    estimada de subida. El backtest compara la estrategia con mantener el
-    activo y retrasa un día la señal antes de aplicar los retornos, para evitar
-    usar una señal calculada al cierre como si se hubiera podido ejecutar
-    antes de ese cierre. También genera un gráfico interactivo con precios,
-    indicadores, señales y evolución del capital.
+    El backtest con IA combina medias móviles, RSI y probabilidad estimada de
+    subida. El segundo backtest usa solo medias móviles y RSI en el mismo
+    período de prueba. Ambos se comparan con mantener el activo y retrasan un
+    día las señales antes de aplicar los retornos.
 
     Args:
         ticker: Símbolo del activo que se descarga desde Yahoo Finance, por
@@ -131,7 +144,7 @@ def ejecutar_estrategia(
             sesiones. Debe ser positiva y mayor que ``periodo_media_corta``.
 
     Returns:
-        Una tupla de cinco elementos, en este orden:
+        Una tupla de nueve elementos, en este orden:
 
         * HTML del gráfico interactivo de Plotly, sin las etiquetas
           ``<html>`` ni ``<body>``.
@@ -141,6 +154,12 @@ def ejecutar_estrategia(
           de prueba, como fracción entre 0 y 1.
         * Última señal de trading como entero: ``1`` para compra, ``-1`` para
           venta y ``0`` para mantener.
+        * HTML del gráfico interactivo del backtest solo técnico.
+        * Rentabilidad porcentual del mercado durante el período de prueba
+          técnico.
+        * Rentabilidad porcentual del backtest solo técnico.
+        * Última señal técnica: ``1`` para compra, ``-1`` para venta y ``0``
+          para mantener.
 
     Raises:
         ValueError: Si los períodos de medias móviles no son positivos o su
@@ -237,15 +256,183 @@ def ejecutar_estrategia(
     rentabilidad_estrategia = (
         df_resultados['Capital_Estrategia'].iloc[-1] - 1
     ) * 100
+    df_prueba_tecnica = df_indicadores.loc[df_prueba.index].copy()
+    df_prueba_tecnica['Recomendacion_Tecnica'] = df_prueba_tecnica.apply(
+        lambda fila: generar_senal_tecnica(
+            fila['SMA_corta'], fila['SMA_larga'], fila['RSI'],
+            rsi_entrada, rsi_salida,
+        ),
+        axis=1,
+    )
+    df_prueba_tecnica['Senal_Trading'] = (
+        df_prueba_tecnica['Recomendacion_Tecnica'].map(
+            {
+                "COMPRA (BUY)": 1,
+                "VENTA (SELL)": -1,
+                "MANTENER (HOLD)": 0,
+            }
+        )
+    )
+    df_resultados_tecnicos = ejecutar_backtest(df_prueba_tecnica)
+    if df_resultados_tecnicos.empty:
+        raise ValueError(
+            "No hay suficientes resultados para el backtest técnico. "
+            "Selecciona un rango de fechas más amplio."
+        )
+    ultima_senal_tecnica = int(
+        df_resultados_tecnicos['Senal_Trading'].iloc[-1]
+    )
+    grafico_tecnico = graficar_resultados_tecnicos(
+        df_resultados_tecnicos, ticker, rsi_entrada, rsi_salida,
+        periodo_media_corta, periodo_media_larga,
+    )
+    rentabilidad_mercado_tecnica = (
+        df_resultados_tecnicos['Capital_Mercado'].iloc[-1] - 1
+    ) * 100
+    rentabilidad_tecnica = (
+        df_resultados_tecnicos['Capital_Estrategia'].iloc[-1] - 1
+    ) * 100
     return (
         grafico, rentabilidad_mercado, rentabilidad_estrategia,
-        probabilidad_subida, ultima_senal_trading,
+        probabilidad_subida, ultima_senal_trading, grafico_tecnico,
+        rentabilidad_mercado_tecnica, rentabilidad_tecnica,
+        ultima_senal_tecnica,
     )
+
+
+def ejecutar_estrategia(
+    ticker, fecha_inicio, fecha_fin,
+    rsi_entrada: float = 30.0, rsi_salida: float = 70.0,
+    probabilidad_minima: float = 0.50,
+    probabilidad_maxima_venta: float = 0.30,
+    periodo_media_corta: int = 50, periodo_media_larga: int = 200,
+):
+    """Mantiene la interfaz previa, devolviendo solo los resultados con IA."""
+    return ejecutar_estrategia_completa(
+        ticker, fecha_inicio, fecha_fin,
+        rsi_entrada=rsi_entrada, rsi_salida=rsi_salida,
+        probabilidad_minima=probabilidad_minima,
+        probabilidad_maxima_venta=probabilidad_maxima_venta,
+        periodo_media_corta=periodo_media_corta,
+        periodo_media_larga=periodo_media_larga,
+    )[:5]
 
 
 # =========================================================
 # VISUALIZACIÓN DE RESULTADOS
 # =========================================================
+def graficar_resultados_tecnicos(
+    df, ticker, rsi_entrada, rsi_salida,
+    periodo_media_corta, periodo_media_larga,
+):
+    """Grafica el backtest de señales técnicas sin métricas de IA."""
+    figura = make_subplots(
+        rows=4, cols=1, shared_xaxes=True, vertical_spacing=0.06,
+        row_heights=[0.42, 0.18, 0.22, 0.18],
+        subplot_titles=(
+            'Precio, medias móviles y señales técnicas',
+            'RSI (14)', 'Capital acumulado', 'Volumen',
+        ),
+    )
+    figura.add_trace(
+        go.Scatter(
+            x=df.index, y=df['Close'], mode='lines',
+            name='Precio de cierre', line={'color': 'black'},
+        ),
+        row=1, col=1,
+    )
+    figura.add_trace(
+        go.Scatter(
+            x=df.index, y=df['SMA_corta'], mode='lines',
+            name=f'Media móvil corta ({periodo_media_corta})',
+            line={'color': 'orange'},
+        ),
+        row=1, col=1,
+    )
+    figura.add_trace(
+        go.Scatter(
+            x=df.index, y=df['SMA_larga'], mode='lines',
+            name=f'Media móvil larga ({periodo_media_larga})',
+            line={'color': 'purple'},
+        ),
+        row=1, col=1,
+    )
+    compras = df[df['Senal_Trading'] == 1]
+    ventas = df[df['Senal_Trading'] == -1]
+    figura.add_trace(
+        go.Scatter(
+            x=compras.index, y=compras['Close'], mode='markers',
+            name='Compra técnica',
+            marker={'symbol': 'triangle-up', 'color': 'green', 'size': 10},
+        ),
+        row=1, col=1,
+    )
+    figura.add_trace(
+        go.Scatter(
+            x=ventas.index, y=ventas['Close'], mode='markers',
+            name='Venta técnica',
+            marker={'symbol': 'triangle-down', 'color': 'red', 'size': 10},
+        ),
+        row=1, col=1,
+    )
+    figura.add_trace(
+        go.Scatter(
+            x=df.index, y=df['RSI'], mode='lines', name='RSI (14)',
+            line={'color': 'teal'},
+        ),
+        row=2, col=1,
+    )
+    figura.add_hline(
+        y=rsi_entrada, line_dash='dash', line_color='green',
+        annotation_text=f'Umbral de compra ({rsi_entrada:g})',
+        row=2, col=1,
+    )
+    figura.add_hline(
+        y=rsi_salida, line_dash='dash', line_color='red',
+        annotation_text=f'Umbral de venta ({rsi_salida:g})',
+        row=2, col=1,
+    )
+    figura.update_yaxes(title_text='RSI', range=[0, 100], row=2, col=1)
+    figura.add_trace(
+        go.Scatter(
+            x=df.index, y=df['Capital_Mercado'], mode='lines',
+            name='Mercado (Buy & Hold)',
+            line={'color': 'gray'}, opacity=0.6,
+        ),
+        row=3, col=1,
+    )
+    figura.add_trace(
+        go.Scatter(
+            x=df.index, y=df['Capital_Estrategia'], mode='lines',
+            name='Estrategia técnica', line={'color': 'teal', 'width': 2},
+        ),
+        row=3, col=1,
+    )
+    figura.add_trace(
+        go.Bar(
+            x=df.index, y=df['Volume'], name='Volumen',
+            marker_color='rgba(72, 167, 255, 0.45)',
+        ),
+        row=4, col=1,
+    )
+    figura.update_layout(
+        title=f'Backtest solo técnico ({ticker})',
+        height=800, hovermode='x unified',
+        legend={'orientation': 'h', 'yanchor': 'bottom', 'y': 1.02},
+        margin={'l': 60, 'r': 30, 't': 110, 'b': 50},
+    )
+    figura.update_yaxes(title_text='Precio', row=1, col=1)
+    figura.update_yaxes(title_text='Multiplicador', row=3, col=1)
+    figura.update_yaxes(title_text='Acciones', row=4, col=1)
+    figura.update_xaxes(title_text='Fecha', row=4, col=1)
+    figura.update_xaxes(showgrid=True)
+    figura.update_yaxes(showgrid=True)
+    return figura.to_html(
+        full_html=False, include_plotlyjs='cdn',
+        config={'responsive': True},
+    )
+
+
 def graficar_resultados(
     df, ticker, recomendacion_manana,
     rsi_entrada: float = 30.0, rsi_salida: float = 70.0,

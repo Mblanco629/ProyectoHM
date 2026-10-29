@@ -5,6 +5,9 @@
     <a href="{% url 'chatbot' %}"{% if request.resolver_match.url_name == 'chatbot' %} aria-current="page"{% endif %}>
         Chatbot
     </a>
+    <a href="{% url 'indicadores' %}"{% if request.resolver_match.url_name == 'indicadores' %} aria-current="page"{% endif %}>
+        Indicadores
+    </a>
     <a href="{% url 'estrategia3' %}"{% if request.resolver_match.url_name == 'estrategia3' %} aria-current="page"{% endif %}>
         Estrategia 3
     </a>

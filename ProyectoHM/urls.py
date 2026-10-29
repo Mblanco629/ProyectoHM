@@ -17,13 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from ProyectoHM.views import (
+    home,
     estrategia3,
     estrategia_v1,
     estrategia_v2,
-    hola,
-    home,
-    saludo,
     chatbot,
+    indicadores,
 )
 
 
@@ -31,9 +30,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home, name='home'),
     path('chatbot/', chatbot, name='chatbot'),
+    path('indicadores/', indicadores, name='indicadores'),
     path('estrategia3/', estrategia3, name='estrategia3'),
     path('estrategiav1/', estrategia_v1, name='estrategia_v1'),
     path('estrategiav2/', estrategia_v2, name='estrategia_v2'),
-    path('saludo/', saludo, name='saludo'),
-    path('hola/', hola, name='hola'),
 ]

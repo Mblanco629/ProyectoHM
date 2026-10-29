@@ -10,7 +10,10 @@ from django.shortcuts import render
 from django.utils import timezone
 from xml.etree import ElementTree
 
-from ProyectoHM.src.EstrategiaV1 import ejecutar_estrategia as ejecutar_estrategia_v1
+from ProyectoHM.src.CargaDatos import calcular_indicadores, descargar_datos
+from ProyectoHM.src.EstrategiaV1 import (
+    ejecutar_estrategia_completa as ejecutar_estrategia_v1,
+)
 from ProyectoHM.src.EstrategiaV2 import ejecutar_estrategia as ejecutar_estrategia_v2
 from ProyectoHM.src.EstrategiaV3 import ejecutar_estrategia
 
@@ -109,6 +112,92 @@ def home(request):
 def chatbot(request):
     """Muestra la página del chatbot de trading."""
     return render(request, "chatbot.html")
+
+
+def indicadores(request):
+    """Muestra los indicadores técnicos de un ticker en una fecha dada."""
+    hoy = timezone.localdate()
+    valores = {"ticker": "", "fecha": hoy.isoformat()}
+    error = ""
+    indicadores_calculados = None
+    fecha_resultado = None
+
+    if request.method == "POST":
+        valores.update(
+            {key: request.POST.get(key, "").strip() for key in valores}
+        )
+        valores["ticker"] = valores["ticker"].upper()
+
+        if not re.fullmatch(r"[A-Z0-9.^=-]{1,15}", valores["ticker"]):
+            error = "Introduce un ticker válido (máximo 15 caracteres)."
+
+        try:
+            fecha = date.fromisoformat(valores["fecha"])
+        except ValueError:
+            error = error or "Introduce una fecha válida."
+        else:
+            if fecha > hoy:
+                error = error or "La fecha no puede ser futura."
+
+        if not error:
+            try:
+                datos = descargar_datos(
+                    valores["ticker"],
+                    (fecha - timedelta(days=3 * 365)).isoformat(),
+                    (fecha + timedelta(days=1)).isoformat(),
+                )
+                datos = calcular_indicadores(datos)
+            except ValueError as exc:
+                error = str(exc)
+            else:
+                filas_fecha = [
+                    indice.date() <= fecha for indice in datos.index
+                ]
+                if not any(filas_fecha):
+                    error = (
+                        "No hay suficientes datos para calcular los indicadores "
+                        "en esa fecha."
+                    )
+                else:
+                    fila = datos.loc[filas_fecha].iloc[-1]
+                    fecha_resultado = datos.index[filas_fecha][-1].date()
+                    indicadores_calculados = [
+                        {
+                            "nombre": nombre,
+                            "valor": int(fila[columna])
+                            if columna == "Volume"
+                            else float(fila[columna]),
+                            "decimales": 0 if columna == "Volume" else 4,
+                        }
+                        for columna, nombre in (
+                            ("Open", "Apertura"),
+                            ("High", "Máximo"),
+                            ("Low", "Mínimo"),
+                            ("Close", "Cierre"),
+                            ("Volume", "Volumen"),
+                            ("SMA_corta", "Media móvil simple (50 sesiones)"),
+                            ("SMA_larga", "Media móvil simple (200 sesiones)"),
+                            ("Volatilidad", "Volatilidad (desviación estándar, 20 sesiones)"),
+                            ("RSI", "RSI (14 sesiones)"),
+                            ("Bollinger_Inferior", "Banda de Bollinger inferior"),
+                            ("Bollinger_Media", "Media de Bollinger"),
+                            ("Bollinger_Superior", "Banda de Bollinger superior"),
+                            ("Volumen_Medio_20", "Volumen medio (20 sesiones)"),
+                        )
+                    ]
+
+    return render(
+        request,
+        "indicadores.html",
+        {
+            "valores": valores,
+            "error": error,
+            "hoy": hoy.isoformat(),
+            "ticker": valores["ticker"],
+            "fecha_resultado": fecha_resultado,
+            "indicadores": indicadores_calculados,
+        },
+    )
 
 
 def estrategia3(request):
@@ -332,6 +421,10 @@ def estrategia_v1(request):
                     rentabilidad_estrategia,
                     probabilidad_subida,
                     ultima_senal_trading,
+                    grafico_tecnico,
+                    rentabilidad_mercado_tecnica,
+                    rentabilidad_tecnica,
+                    ultima_senal_tecnica,
                 ) = ejecutar_estrategia_v1(
                     valores["ticker"],
                     fecha_inicio.isoformat(),
@@ -360,6 +453,14 @@ def estrategia_v1(request):
                             ultima_senal_trading, "DESCONOCIDA"
                         ),
                         "grafico": grafico,
+                        "rentabilidad_mercado_tecnica": (
+                            rentabilidad_mercado_tecnica
+                        ),
+                        "rentabilidad_tecnica": rentabilidad_tecnica,
+                        "ultima_senal_tecnica": senales.get(
+                            ultima_senal_tecnica, "DESCONOCIDA"
+                        ),
+                        "grafico_tecnico": grafico_tecnico,
                     },
                 )
 
@@ -368,14 +469,3 @@ def estrategia_v1(request):
         "estrategiasV1.html",
         {"valores": valores, "error": error, "hoy": hoy.isoformat()},
     )
-
-
-def saludo(request):
-    """Devuelve una respuesta de texto fija de saludo."""
-    return HttpResponse("Hola mundo, esta es mi primera vista en Django")
-
-
-def hola(request):
-    """Devuelve un saludo que incluye la fecha y hora locales actuales."""
-    fecha_hora = timezone.localtime()
-    return HttpResponse(f"Hola, la fecha y hora actual es: {fecha_hora:%d/%m/%Y %H:%M:%S}")

@@ -1,0 +1,79 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Consulta los indicadores técnicos de un activo en una fecha.">
+    <title>Indicadores técnicos · Trading Django</title>
+    <link rel="stylesheet" href="{% static 'styles_ilai.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-logo" href="{% url 'home' %}">Trading Django</a>
+            {% include "menu.html" %}
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section class="card" aria-labelledby="page-title">
+            <p class="eyebrow">MERCADOS · INDICADORES</p>
+            <h1 id="page-title">Indicadores técnicos</h1>
+            <p>
+                Introduce un ticker y una fecha para consultar sus precios e
+                indicadores técnicos.
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                <label for="ticker">
+                    Ticker
+                    <input id="ticker" name="ticker" value="{{ valores.ticker }}"
+                           placeholder="SAN.MC" maxlength="15" required>
+                </label>
+                <label for="fecha">
+                    Fecha
+                    <input id="fecha" name="fecha" type="date"
+                           value="{{ valores.fecha }}" max="{{ hoy }}" required>
+                </label>
+                <button type="submit">Consultar indicadores</button>
+            </form>
+
+            {% if error %}
+                <p class="site-flash error" role="alert">{{ error }}</p>
+            {% endif %}
+
+            {% if indicadores %}
+                <section class="results" aria-labelledby="resultado-titulo">
+                    <h2 id="resultado-titulo">
+                        {{ ticker }} · sesión del {{ fecha_resultado|date:"d/m/Y" }}
+                    </h2>
+                    <p>
+                        Se muestra la última sesión bursátil disponible en o antes
+                        de la fecha solicitada, con indicadores calculados a partir
+                        del histórico del activo.
+                    </p>
+                    <div class="metrics">
+                        {% for indicador in indicadores %}
+                            <p>
+                                {{ indicador.nombre }}
+                                <strong>{{ indicador.valor|floatformat:indicador.decimales }}</strong>
+                            </p>
+                        {% endfor %}
+                    </div>
+                    <p class="chart-help">
+                        <code>limpiar_datos</code> normaliza los datos OHLCV;
+                        <code>calcular_indicadores</code> calcula los indicadores
+                        técnicos mostrados a continuación.
+                        Las medias móviles se calculan sobre 50 y 200 sesiones;
+                        el RSI sobre 14 sesiones; la volatilidad, las bandas de
+                        Bollinger y el volumen medio, sobre 20 sesiones. Los
+                        cálculos utilizan los precios históricos disponibles.
+                    </p>
+                </section>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>
