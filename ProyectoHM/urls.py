@@ -23,6 +23,7 @@ from ProyectoHM.views import (
     estrategia_v2,
     chatbot,
     indicadores,
+    grafico_ticker,
 )
 
 
@@ -31,6 +32,7 @@ urlpatterns = [
     path('', home, name='home'),
     path('chatbot/', chatbot, name='chatbot'),
     path('indicadores/', indicadores, name='indicadores'),
+    path('grafico-ticker/', grafico_ticker, name='grafico_ticker'),
     path('estrategia3/', estrategia3, name='estrategia3'),
     path('estrategiav1/', estrategia_v1, name='estrategia_v1'),
     path('estrategiav2/', estrategia_v2, name='estrategia_v2'),

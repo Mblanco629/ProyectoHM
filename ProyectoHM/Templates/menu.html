@@ -8,6 +8,9 @@
     <a href="{% url 'indicadores' %}"{% if request.resolver_match.url_name == 'indicadores' %} aria-current="page"{% endif %}>
         Indicadores
     </a>
+    <a href="{% url 'grafico_ticker' %}"{% if request.resolver_match.url_name == 'grafico_ticker' %} aria-current="page"{% endif %}>
+        Gráfico de ticker
+    </a>
     <a href="{% url 'estrategia3' %}"{% if request.resolver_match.url_name == 'estrategia3' %} aria-current="page"{% endif %}>
         Estrategia 3
     </a>

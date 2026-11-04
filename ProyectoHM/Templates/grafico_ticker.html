@@ -1,0 +1,168 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Consulta el gráfico interactivo del histórico de un ticker.">
+    <title>Gráfico de ticker · Trading Django</title>
+    <link rel="stylesheet" href="{% static 'styles_ilai.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-logo" href="{% url 'home' %}">Trading Django</a>
+            {% include "menu.html" %}
+        </div>
+    </header>
+
+    <main class="site-main">
+        <section class="card" aria-labelledby="page-title">
+            <p class="eyebrow">MERCADOS · GRÁFICO</p>
+            <h1 id="page-title">Gráfico interactivo de ticker</h1>
+            <p>Elige un ticker, un rango de fechas y el tipo de gráfico.</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <label for="ticker">
+                    Ticker
+                    <input id="ticker" name="ticker" value="{{ valores.ticker }}"
+                           placeholder="SAN.MC" maxlength="15" required>
+                </label>
+                <label for="fecha_inicio">
+                    Desde
+                    <input id="fecha_inicio" name="fecha_inicio" type="date"
+                           value="{{ valores.fecha_inicio }}" max="{{ hoy }}" required>
+                </label>
+                <label for="fecha_fin">
+                    Hasta
+                    <input id="fecha_fin" name="fecha_fin" type="date"
+                           value="{{ valores.fecha_fin }}" max="{{ hoy }}" required>
+                </label>
+                <label for="chart_type">
+                    Tipo de gráfico
+                    <select id="chart_type" name="chart_type">
+                        {% for tipo, etiqueta in chart_types %}
+                            <option value="{{ tipo }}"{% if valores.chart_type == tipo %} selected{% endif %}>
+                                {{ etiqueta }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <button type="submit">Mostrar gráfico</button>
+            </form>
+
+            {% if error %}
+                <p class="site-flash error" role="alert">{{ error }}</p>
+            {% endif %}
+
+            {% if datos_grafico %}
+                <section class="results" aria-labelledby="resultado-titulo">
+                    <h2 id="resultado-titulo">{{ valores.ticker }} · Histórico de precios</h2>
+                    <label class="chart-type-control" for="chart-type-control">
+                        Cambiar tipo de gráfico
+                        <select id="chart-type-control">
+                            {% for tipo, etiqueta in chart_types %}
+                                <option value="{{ tipo }}"{% if valores.chart_type == tipo %} selected{% endif %}>
+                                    {{ etiqueta }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <p class="chart-help">
+                        Explora el gráfico con el cursor, desplaza la rueda para acercar
+                        y arrastra para moverte por el histórico.
+                    </p>
+                    <div id="ticker-chart" class="ticker-chart" role="img"
+                         aria-label="Gráfico interactivo del ticker {{ valores.ticker }}"></div>
+                    {{ datos_grafico|json_script:"ticker-chart-data" }}
+                </section>
+            {% endif %}
+        </section>
+    </main>
+
+    {% if datos_grafico %}
+        <script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+        <script>
+            const chartData = JSON.parse(
+                document.getElementById("ticker-chart-data").textContent
+            );
+            const chartContainer = document.getElementById("ticker-chart");
+            const chart = LightweightCharts.createChart(chartContainer, {
+                autoSize: true,
+                layout: {
+                    background: { color: "#0b111b" },
+                    textColor: "#bdc9d8",
+                },
+                grid: {
+                    vertLines: { color: "#1d2938" },
+                    horzLines: { color: "#1d2938" },
+                },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                rightPriceScale: { borderColor: "#344256" },
+                timeScale: { borderColor: "#344256", timeVisible: true },
+            });
+            let activeSeries;
+
+            function setChartType(type) {
+                if (activeSeries) {
+                    chart.removeSeries(activeSeries);
+                }
+                let series;
+                if (type === "candlestick") {
+                    series = chart.addCandlestickSeries({
+                        upColor: "#26a69a",
+                        downColor: "#ef5350",
+                        borderVisible: false,
+                        wickUpColor: "#26a69a",
+                        wickDownColor: "#ef5350",
+                    });
+                    series.setData(chartData);
+                } else if (type === "bar") {
+                    series = chart.addBarSeries({
+                        upColor: "#26a69a",
+                        downColor: "#ef5350",
+                    });
+                    series.setData(chartData);
+                } else {
+                    const closeData = chartData.map(({ time, close }) => ({
+                        time,
+                        value: close,
+                    }));
+                    if (type === "area") {
+                        series = chart.addAreaSeries({
+                            lineColor: "#48a7ff",
+                            topColor: "#48a7ff66",
+                            bottomColor: "#48a7ff05",
+                        });
+                    } else if (type === "baseline") {
+                        series = chart.addBaselineSeries({
+                            baseValue: {
+                                type: "price",
+                                price: closeData[0].value,
+                            },
+                            topLineColor: "#26a69a",
+                            topFillColor1: "#26a69a33",
+                            topFillColor2: "#26a69a05",
+                            bottomLineColor: "#ef5350",
+                            bottomFillColor1: "#ef535033",
+                            bottomFillColor2: "#ef535005",
+                        });
+                    } else {
+                        series = chart.addLineSeries({ color: "#48a7ff", lineWidth: 2 });
+                    }
+                    series.setData(closeData);
+                }
+                activeSeries = series;
+                chart.timeScale().fitContent();
+            }
+
+            const chartTypeControl = document.getElementById("chart-type-control");
+            setChartType(chartTypeControl.value);
+            chartTypeControl.addEventListener("change", (event) => {
+                setChartType(event.target.value);
+            });
+        </script>
+    {% endif %}
+</body>
+</html>

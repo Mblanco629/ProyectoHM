@@ -251,6 +251,7 @@ label {
 }
 
 input,
+select,
 button {
     width: 100%;
     min-height: 46px;
@@ -266,11 +267,17 @@ input {
     transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
+select {
+    color: #f1f5f9;
+    background: #0b111b;
+}
+
 input::placeholder {
     color: #718096;
 }
 
 input:focus-visible,
+select:focus-visible,
 button:focus-visible {
     outline: 3px solid #48a7ff66;
     outline-offset: 2px;
@@ -354,6 +361,18 @@ button:active {
 
 .chart-help strong {
     color: #e7f3ff;
+}
+
+.ticker-chart {
+    width: 100%;
+    height: 460px;
+    margin-top: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.chart-type-control {
+    max-width: 260px;
 }
 
 .landing {

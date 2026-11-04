@@ -200,6 +200,86 @@ def indicadores(request):
     )
 
 
+def grafico_ticker(request):
+    """Descarga el histórico OHLCV de un ticker y lo representa como gráfico."""
+    hoy = timezone.localdate()
+    valores = {
+        "ticker": "",
+        "fecha_inicio": (hoy - timedelta(days=5 * 365)).isoformat(),
+        "fecha_fin": hoy.isoformat(),
+        "chart_type": "candlestick",
+    }
+    if request.method == "POST":
+        valores.update(
+            {key: request.POST.get(key, "").strip() for key in valores}
+        )
+        valores["ticker"] = valores["ticker"].upper()
+
+    chart_types = (
+        ("candlestick", "Velas japonesas"),
+        ("line", "Línea"),
+        ("area", "Área"),
+        ("bar", "Barras OHLC"),
+        ("baseline", "Línea base"),
+    )
+    error = ""
+    datos_grafico = None
+
+    if request.method == "POST":
+        if not re.fullmatch(r"[A-Z0-9.^=-]{1,15}", valores["ticker"]):
+            error = "Introduce un ticker válido (máximo 15 caracteres)."
+
+        try:
+            fecha_inicio = date.fromisoformat(valores["fecha_inicio"])
+            fecha_fin = date.fromisoformat(valores["fecha_fin"])
+        except ValueError:
+            error = error or "Introduce un rango de fechas válido."
+        else:
+            if fecha_inicio >= fecha_fin:
+                error = error or "La fecha de inicio debe ser anterior a la fecha de fin."
+            elif fecha_fin > hoy:
+                error = error or "La fecha de fin no puede ser futura."
+
+        if valores["chart_type"] not in {tipo for tipo, _ in chart_types}:
+            error = error or "Selecciona un tipo de gráfico válido."
+
+        if not error:
+            try:
+                datos = descargar_datos(
+                    valores["ticker"],
+                    fecha_inicio.isoformat(),
+                    (fecha_fin + timedelta(days=1)).isoformat(),
+                )
+            except ValueError as exc:
+                error = str(exc)
+            else:
+                if datos.empty:
+                    error = "No se encontraron datos para el ticker y período indicados."
+                else:
+                    datos_grafico = [
+                        {
+                            "time": indice.strftime("%Y-%m-%d"),
+                            "open": float(fila["Open"]),
+                            "high": float(fila["High"]),
+                            "low": float(fila["Low"]),
+                            "close": float(fila["Close"]),
+                        }
+                        for indice, fila in datos.iterrows()
+                    ]
+
+    return render(
+        request,
+        "grafico_ticker.html",
+        {
+            "valores": valores,
+            "hoy": hoy.isoformat(),
+            "error": error,
+            "datos_grafico": datos_grafico,
+            "chart_types": chart_types,
+        },
+    )
+
+
 def estrategia3(request):
     """Valida ticker y fecha, ejecuta la estrategia V3 y muestra sus métricas.
 
