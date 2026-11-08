@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,6 +27,14 @@ SECRET_KEY = 'django-insecure-3#a3=18e-w*7i5d$ve_bd!6g@g!tp+ch6y7ir5#dgkptnbskje
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        'CSRF_TRUSTED_ORIGINS',
+        'https://trade1-tradingdj.ttdo8n.easypanel.host',
+    ).split(',')
+    if origin.strip()
+]
 
 
 # Application definition
