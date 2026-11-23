@@ -28,12 +28,15 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.environ.get(
-        'CSRF_TRUSTED_ORIGINS',
-        'https://trade1-tradingdj.ttdo8n.easypanel.host',
-    ).split(',')
-    if origin.strip()
+    'https://servicios.interlinkedai.es',
+    *[
+        origin.strip()
+        for origin in os.environ.get(
+            'CSRF_TRUSTED_ORIGINS',
+            'https://trade1-tradingdj.ttdo8n.easypanel.host',
+        ).split(',')
+        if origin.strip()
+    ],
 ]
 
 
